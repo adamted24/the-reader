@@ -122,6 +122,21 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
         >{saved ? '✓ SAVED' : '+ SAVE'}</button>
       </div>
 
+      {/* Headline — always visible */}
+      <h2
+        onClick={() => setExpanded(e => !e)}
+        style={{
+          fontSize: 'clamp(19px, 3.5vw, 24px)',
+          fontFamily: "'Lora', serif",
+          fontWeight: 600,
+          color: C.black,
+          lineHeight: 1.28,
+          margin: 0,
+          marginBottom: 11,
+          cursor: 'pointer',
+        }}
+      >{item.title}</h2>
+
       {/* AI Summary */}
       {loading && (
         <div style={{
@@ -190,21 +205,6 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
           padding: '16px',
           marginTop: 4,
         }}>
-          {/* Headline inside box */}
-          <h2
-            onClick={() => setExpanded(false)}
-            style={{
-              fontSize: 'clamp(19px, 3.5vw, 24px)',
-              fontFamily: "'Lora', serif",
-              fontWeight: 600,
-              color: C.black,
-              lineHeight: 1.28,
-              margin: 0,
-              marginBottom: 14,
-              cursor: 'pointer',
-            }}
-          >{item.title}</h2>
-
           {/* Body text */}
           {item.description && (
             <p style={{
