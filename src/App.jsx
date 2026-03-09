@@ -71,7 +71,6 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
   const [aiData, setAiData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
-  const [copied, setCopied] = useState(false)
   const hasTriedRef = useRef(false)
 
   useEffect(() => {
@@ -87,16 +86,10 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
     return () => clearTimeout(t)
   }, [])
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(item.link)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <article style={{ borderBottom: `1px solid ${C.faint}`, padding: '22px 0' }}>
 
-      {/* Meta row: source · topic · age · bookmark */}
+      {/* Meta row: source · topic · age · save */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center',
         marginBottom: 11, flexWrap: 'wrap',
@@ -117,31 +110,17 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
           color: C.dimmer,
         }}>{timeAgo(item.pubDate)}</span>
         <button
-  onClick={() => onSave(item)}
-  style={{
-    fontSize: 10, fontFamily: "'DM Mono', monospace",
-    letterSpacing: 1.2, color: saved ? accentColor : C.dimmer,
-    background: 'none', border: 'none',
-    cursor: 'pointer', padding: 0,
-  }}
->{saved ? '🔖 SAVED' : '🔖 SAVE'}</button>
+          onClick={() => onSave(item)}
+          style={{
+            marginLeft: 'auto', background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0,
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            letterSpacing: 1.2,
+            color: saved ? C.teal : C.dimmer,
+            transition: 'color 0.15s',
+          }}
+        >{saved ? '✓ SAVED' : '+ SAVE'}</button>
       </div>
-
-      {/* Headline */}
-      <h2
-        onClick={() => setExpanded(e => !e)}
-        style={{
-          fontSize: 'clamp(19px, 3.5vw, 24px)',
-          fontFamily: "'Lora', serif",
-          fontWeight: 600,
-          color: C.black,
-          lineHeight: 1.28,
-          marginBottom: 11,
-          cursor: 'pointer',
-          margin: 0,
-          marginBottom: 11,
-        }}
-      >{item.title}</h2>
 
       {/* AI Summary */}
       {loading && (
@@ -190,8 +169,8 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
         </div>
       )}
 
-      {/* Expand / collapse */}
-      {!expanded ? (
+      {/* Collapsed state */}
+      {!expanded && (
         <button
           onClick={() => setExpanded(true)}
           style={{
@@ -201,13 +180,31 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
             cursor: 'pointer', padding: 0,
           }}
         >READ MORE +</button>
-      ) : (
+      )}
+
+      {/* Expanded rectangle — headline + body + actions */}
+      {expanded && (
         <div style={{
           border: `1px solid ${C.faint}`,
           borderRadius: 3,
           padding: '16px',
           marginTop: 4,
         }}>
+          {/* Headline inside box */}
+          <h2
+            onClick={() => setExpanded(false)}
+            style={{
+              fontSize: 'clamp(19px, 3.5vw, 24px)',
+              fontFamily: "'Lora', serif",
+              fontWeight: 600,
+              color: C.black,
+              lineHeight: 1.28,
+              margin: 0,
+              marginBottom: 14,
+              cursor: 'pointer',
+            }}
+          >{item.title}</h2>
+
           {/* Body text */}
           {item.description && (
             <p style={{
@@ -239,11 +236,12 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
               onClick={() => onSave(item)}
               style={{
                 fontSize: 10, fontFamily: "'DM Mono', monospace",
-                letterSpacing: 1.2, color: saved ? accentColor : C.dimmer,
+                letterSpacing: 1.2,
+                color: saved ? accentColor : C.dimmer,
                 background: 'none', border: 'none',
                 cursor: 'pointer', padding: 0,
               }}
-            >{saved ? '🔖 SAVED' : '🔖 SAVE'}</button>
+            >{saved ? '✓ SAVED' : '+ SAVE'}</button>
 
             <button
               onClick={() => setExpanded(false)}
@@ -261,7 +259,7 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
   )
 }
 
-// ─── Saved card (in SAVED view) ────────────────────────────────────────────
+// ─── Saved card ────────────────────────────────────────────────────────────
 function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
   const [copied, setCopied] = useState(false)
 
@@ -272,11 +270,7 @@ function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
   }
 
   return (
-    <article style={{
-      borderBottom: `1px solid ${C.faint}`,
-      padding: '22px 0',
-    }}>
-      {/* Meta */}
+    <article style={{ borderBottom: `1px solid ${C.faint}`, padding: '22px 0' }}>
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center',
         marginBottom: 11, flexWrap: 'wrap',
@@ -295,13 +289,13 @@ function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
           onClick={() => onUnsave(item.id)}
           style={{
             marginLeft: 'auto', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, fontSize: 14,
+            cursor: 'pointer', padding: 0,
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            letterSpacing: 1.2, color: C.dimmer,
           }}
-          title="Remove from saved"
-        >🔖</button>
+        >REMOVE −</button>
       </div>
 
-      {/* Headline */}
       <h2 style={{
         fontSize: 'clamp(19px, 3.5vw, 24px)',
         fontFamily: "'Lora', serif",
@@ -309,12 +303,11 @@ function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
         lineHeight: 1.28, margin: 0, marginBottom: 14,
       }}>{item.title}</h2>
 
-      {/* URL box */}
       <div style={{
         border: `1px solid ${C.faint}`,
         borderRadius: 3,
         padding: '12px 14px',
-        marginBottom: 10,
+        marginBottom: 12,
       }}>
         <div style={{
           fontSize: 10, fontFamily: "'DM Mono', monospace",
@@ -327,7 +320,6 @@ function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
         }}>{item.link}</div>
       </div>
 
-      {/* Actions */}
       <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           onClick={handleCopy}
@@ -348,16 +340,6 @@ function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
             borderBottom: `1px solid ${C.faint}`,
             paddingBottom: 1,
           }}>READ FULL STORY ↗</a>
-
-        <button
-          onClick={() => onUnsave(item.id)}
-          style={{
-            fontSize: 10, fontFamily: "'DM Mono', monospace",
-            letterSpacing: 1.2, color: C.dimmer,
-            background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, marginLeft: 'auto',
-          }}
-        >REMOVE −</button>
       </div>
     </article>
   )
@@ -405,9 +387,7 @@ function usePullToRefresh(onRefresh) {
 
   useEffect(() => {
     const onTouchStart = (e) => {
-      if (window.scrollY === 0) {
-        startY.current = e.touches[0].clientY
-      }
+      if (window.scrollY === 0) startY.current = e.touches[0].clientY
     }
     const onTouchMove = (e) => {
       if (startY.current === null) return
@@ -418,9 +398,7 @@ function usePullToRefresh(onRefresh) {
       }
     }
     const onTouchEnd = () => {
-      if (distance >= threshold) {
-        onRefresh()
-      }
+      if (distance >= threshold) onRefresh()
       startY.current = null
       setPulling(false)
       setDistance(0)
@@ -451,7 +429,6 @@ export default function App() {
 
   const savedIds = new Set(savedItems.map(i => i.id))
 
-  // Persist saved items
   useEffect(() => {
     try {
       localStorage.setItem('reader-saved', JSON.stringify(savedItems))
@@ -483,7 +460,6 @@ export default function App() {
 
   const topics = Object.entries(TOPICS)
 
-  // Find topic color for a saved item
   const getTopicForItem = (item) => {
     for (const [key, topic] of topics) {
       if (topic.feeds.some(f => f.name === item.source)) {
@@ -496,14 +472,11 @@ export default function App() {
   return (
     <div style={{ minHeight: '100vh', background: C.bg }}>
 
-      {/* Pull to refresh indicator */}
       {pulling && (
         <div style={{
           position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
           display: 'flex', justifyContent: 'center', alignItems: 'center',
-          height: Math.min(distance, 60),
-          background: C.bg,
-          transition: 'height 0.1s',
+          height: Math.min(distance, 60), background: C.bg,
         }}>
           <div style={{
             fontSize: 10, fontFamily: "'DM Mono', monospace",
@@ -515,7 +488,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Header */}
       <header style={{
         borderBottom: `1px solid ${C.faint}`,
         padding: '0 20px',
@@ -530,31 +502,25 @@ export default function App() {
             <div style={{
               fontSize: 'clamp(26px, 5vw, 36px)',
               fontFamily: "'Lora', serif",
-              fontWeight: 400,
-              letterSpacing: '-0.01em',
+              fontWeight: 400, letterSpacing: '-0.01em',
               color: C.black, lineHeight: 1,
             }}>
               The <span style={{ fontStyle: 'italic', color: C.teal }}>Reader</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <button
-                onClick={handleRefreshAll}
-                style={{
-                  fontSize: 10, fontFamily: "'DM Mono', monospace",
-                  letterSpacing: 1, color: C.dimmer,
-                  background: 'none', border: 'none',
-                  cursor: 'pointer', padding: 0,
-                }}
-              >↻ REFRESH</button>
+              <button onClick={handleRefreshAll} style={{
+                fontSize: 10, fontFamily: "'DM Mono', monospace",
+                letterSpacing: 1, color: C.dimmer,
+                background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0,
+              }}>↻ REFRESH</button>
               <div style={{
                 fontSize: 10, fontFamily: "'DM Mono', monospace",
                 color: C.dimmer, letterSpacing: 0.5,
-                textAlign: 'right',
               }}>{dateStr}</div>
             </div>
           </div>
 
-          {/* Filter tabs */}
           <div style={{
             display: 'flex', overflowX: 'auto',
             WebkitOverflowScrolling: 'touch',
@@ -565,26 +531,21 @@ export default function App() {
               ...topics.map(([key, topic]) => ({ key, label: topic.label, color: topic.color })),
               { key: 'saved', label: `Saved${savedItems.length > 0 ? ` (${savedItems.length})` : ''}`, color: C.dimmer },
             ].map(({ key, label, color }) => (
-              <button key={key}
-                onClick={() => setActiveFilter(key)}
-                style={{
-                  padding: '9px 14px 8px', border: 'none', background: 'none',
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                  fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5,
-                  textTransform: 'uppercase',
-                  color: activeFilter === key ? color : C.dimmer,
-                  borderBottom: activeFilter === key ? `2px solid ${color}` : '2px solid transparent',
-                  transition: 'all 0.15s',
-                }}>{label}</button>
+              <button key={key} onClick={() => setActiveFilter(key)} style={{
+                padding: '9px 14px 8px', border: 'none', background: 'none',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+                fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5,
+                textTransform: 'uppercase',
+                color: activeFilter === key ? color : C.dimmer,
+                borderBottom: activeFilter === key ? `2px solid ${color}` : '2px solid transparent',
+                transition: 'all 0.15s',
+              }}>{label}</button>
             ))}
           </div>
         </div>
       </header>
 
-      {/* Content */}
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '8px 20px 80px' }}>
-
-        {/* Saved view */}
         {activeFilter === 'saved' && (
           <section style={{ marginBottom: 48 }}>
             {savedItems.length === 0 ? (
@@ -592,7 +553,7 @@ export default function App() {
                 padding: '48px 0', textAlign: 'center',
                 fontFamily: "'Lora', serif", fontStyle: 'italic',
                 color: C.dimmer, fontSize: 17,
-              }}>No saved stories yet. Tap 🔖 on any story to save it.</div>
+              }}>No saved stories yet. Tap + SAVE on any story to save it.</div>
             ) : (
               savedItems.map(item => {
                 const { topic } = getTopicForItem(item)
@@ -610,7 +571,6 @@ export default function App() {
           </section>
         )}
 
-        {/* Topic sections */}
         {activeFilter !== 'saved' && topics
           .filter(([key]) => activeFilter === 'all' || activeFilter === key)
           .map(([key, topic]) => (
