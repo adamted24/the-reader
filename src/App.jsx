@@ -89,131 +89,146 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
   return (
     <article style={{ borderBottom: `1px solid ${C.faint}`, padding: '22px 0' }}>
 
-      {/* Meta row: source · topic · age · save */}
-      <div style={{
-        display: 'flex', gap: 8, alignItems: 'center',
-        marginBottom: 11, flexWrap: 'wrap',
-      }}>
-        <span style={{
-          fontSize: 10, fontFamily: "'DM Mono', monospace",
-          color: C.dimmer, letterSpacing: 0.5, fontWeight: 500,
-        }}>{item.source}</span>
-        <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
-        <span style={{
-          fontSize: 10, fontFamily: "'DM Mono', monospace",
-          letterSpacing: 1.5, color: accentColor,
-          textTransform: 'uppercase', fontWeight: 500,
-        }}>{topicLabel}</span>
-        <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
-        <span style={{
-          fontSize: 10, fontFamily: "'DM Mono', monospace",
-          color: C.dimmer,
-        }}>{timeAgo(item.pubDate)}</span>
-        <button
-          onClick={() => onSave(item)}
-          style={{
-            marginLeft: 'auto', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0,
-            fontSize: 10, fontFamily: "'DM Mono', monospace",
-            letterSpacing: 1.2,
-            color: saved ? C.teal : C.dimmer,
-            transition: 'color 0.15s',
-          }}
-        >{saved ? '✓ SAVED' : '+ SAVE'}</button>
-      </div>
-
-      {/* Headline — always visible */}
-      <h2
-        onClick={() => setExpanded(e => !e)}
-        style={{
-          fontSize: 'clamp(19px, 3.5vw, 24px)',
-          fontFamily: "'Lora', serif",
-          fontWeight: 600,
-          color: C.black,
-          lineHeight: 1.28,
-          margin: 0,
-          marginBottom: 11,
-          cursor: 'pointer',
-        }}
-      >{item.title}</h2>
-
-      {/* AI Summary */}
-      {loading && (
-        <div style={{
-          fontSize: 11, fontFamily: "'DM Mono', monospace",
-          color: C.dimmer, letterSpacing: 0.5, marginBottom: 11,
-        }}>summarizing…</div>
-      )}
-
-      {aiData?.summary && !loading && (
-        <p style={{
-          fontSize: 'clamp(15px, 2.4vw, 17px)',
-          fontFamily: "'Lora', serif",
-          fontStyle: 'italic',
-          color: C.ink,
-          lineHeight: 1.72,
-          margin: 0,
-          marginBottom: 11,
-        }}>{aiData.summary}</p>
-      )}
-
-      {/* Quote block */}
-      {aiData?.quote && !loading && (
-        <div style={{
-          borderLeft: `2px solid ${C.faint}`,
-          paddingLeft: 13,
-          marginBottom: 13,
-        }}>
-          <p style={{
-            fontSize: 'clamp(14px, 2.2vw, 16px)',
-            fontFamily: "'Lora', serif",
-            fontStyle: 'italic',
-            color: C.dim,
-            lineHeight: 1.72,
-            margin: 0,
-            marginBottom: 4,
-          }}>"{aiData.quote}"</p>
-          {aiData.attribution && (
-            <span style={{
-              fontSize: 10,
-              fontFamily: "'DM Mono', monospace",
-              color: C.dimmer,
-              letterSpacing: 0.3,
-            }}>— {aiData.attribution}, via {item.source}</span>
-          )}
-        </div>
-      )}
-
-      {/* Collapsed state */}
+      {/* Collapsed state — meta + headline + summary + quote + READ MORE */}
       {!expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          style={{
-            fontSize: 10, fontFamily: "'DM Mono', monospace",
-            letterSpacing: 1.2, color: accentColor,
-            background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0,
-          }}
-        >READ MORE +</button>
+        <>
+          <div style={{
+            display: 'flex', gap: 8, alignItems: 'center',
+            marginBottom: 11, flexWrap: 'wrap',
+          }}>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace",
+              color: C.dimmer, letterSpacing: 0.5, fontWeight: 500,
+            }}>{item.source}</span>
+            <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace",
+              letterSpacing: 1.5, color: accentColor,
+              textTransform: 'uppercase', fontWeight: 500,
+            }}>{topicLabel}</span>
+            <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.dimmer,
+            }}>{timeAgo(item.pubDate)}</span>
+          </div>
+
+          <h2
+            onClick={() => setExpanded(true)}
+            style={{
+              fontSize: 'clamp(19px, 3.5vw, 24px)',
+              fontFamily: "'Lora', serif",
+              fontWeight: 600, color: C.black,
+              lineHeight: 1.28, margin: 0, marginBottom: 11,
+              cursor: 'pointer',
+            }}
+          >{item.title}</h2>
+
+          {loading && (
+            <div style={{
+              fontSize: 11, fontFamily: "'DM Mono', monospace",
+              color: C.dimmer, letterSpacing: 0.5, marginBottom: 11,
+            }}>summarizing…</div>
+          )}
+
+          {aiData?.summary && !loading && (
+            <p style={{
+              fontSize: 'clamp(15px, 2.4vw, 17px)',
+              fontFamily: "'Lora', serif", fontStyle: 'italic',
+              color: C.ink, lineHeight: 1.72,
+              margin: 0, marginBottom: 11,
+            }}>{aiData.summary}</p>
+          )}
+
+          {aiData?.quote && !loading && (
+            <div style={{
+              borderLeft: `2px solid ${C.faint}`,
+              paddingLeft: 13, marginBottom: 13,
+            }}>
+              <p style={{
+                fontSize: 'clamp(14px, 2.2vw, 16px)',
+                fontFamily: "'Lora', serif", fontStyle: 'italic',
+                color: C.dim, lineHeight: 1.72,
+                margin: 0, marginBottom: 4,
+              }}>"{aiData.quote}"</p>
+              {aiData.attribution && (
+                <span style={{
+                  fontSize: 10, fontFamily: "'DM Mono', monospace",
+                  color: C.dimmer, letterSpacing: 0.3,
+                }}>— {aiData.attribution}, via {item.source}</span>
+              )}
+            </div>
+          )}
+
+          <button
+            onClick={() => setExpanded(true)}
+            style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace",
+              letterSpacing: 1.2, color: accentColor,
+              background: 'none', border: 'none',
+              cursor: 'pointer', padding: 0,
+            }}
+          >READ MORE +</button>
+        </>
       )}
 
-      {/* Expanded rectangle — headline + body + actions */}
+      {/* Expanded — everything inside the rectangle */}
       {expanded && (
         <div style={{
           border: `1px solid ${C.faint}`,
           borderRadius: 3,
           padding: '16px',
-          marginTop: 4,
         }}>
+          {/* Meta row */}
+          <div style={{
+            display: 'flex', gap: 8, alignItems: 'center',
+            marginBottom: 11, flexWrap: 'wrap',
+          }}>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace",
+              color: C.dimmer, letterSpacing: 0.5, fontWeight: 500,
+            }}>{item.source}</span>
+            <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace",
+              letterSpacing: 1.5, color: accentColor,
+              textTransform: 'uppercase', fontWeight: 500,
+            }}>{topicLabel}</span>
+            <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
+            <span style={{
+              fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.dimmer,
+            }}>{timeAgo(item.pubDate)}</span>
+            <button
+              onClick={() => onSave(item)}
+              style={{
+                marginLeft: 'auto', background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0,
+                fontSize: 10, fontFamily: "'DM Mono', monospace",
+                letterSpacing: 1.2,
+                color: saved ? C.teal : C.dimmer,
+                transition: 'color 0.15s',
+              }}
+            >{saved ? '✓ SAVED' : '+ SAVE'}</button>
+          </div>
+
+          {/* Headline */}
+          <h2
+            onClick={() => setExpanded(false)}
+            style={{
+              fontSize: 'clamp(19px, 3.5vw, 24px)',
+              fontFamily: "'Lora', serif",
+              fontWeight: 600, color: C.black,
+              lineHeight: 1.28, margin: 0, marginBottom: 14,
+              cursor: 'pointer',
+            }}
+          >{item.title}</h2>
+
           {/* Body text */}
           {item.description && (
             <p style={{
               fontSize: 'clamp(14px, 2.2vw, 16px)',
               fontFamily: "'Lora', serif",
-              color: C.ink,
-              lineHeight: 1.88,
-              margin: 0,
-              marginBottom: 14,
+              color: C.ink, lineHeight: 1.88,
+              margin: 0, marginBottom: 14,
             }}>{item.description}</p>
           )}
 
@@ -231,17 +246,6 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
                 borderBottom: `1px solid ${accentColor}`,
                 paddingBottom: 1,
               }}>READ FULL STORY ↗</a>
-
-            <button
-              onClick={() => onSave(item)}
-              style={{
-                fontSize: 10, fontFamily: "'DM Mono', monospace",
-                letterSpacing: 1.2,
-                color: saved ? accentColor : C.dimmer,
-                background: 'none', border: 'none',
-                cursor: 'pointer', padding: 0,
-              }}
-            >{saved ? '✓ SAVED' : '+ SAVE'}</button>
 
             <button
               onClick={() => setExpanded(false)}
