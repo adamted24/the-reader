@@ -1,25 +1,37 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 
-const CACHE_TTL = 1000 * 60 * 30 // 30 minutes
+const CACHE_TTL = 1000 * 60 * 30 // 30 min
+const cache = {}
 
-const PROXY = (url) =>
-  `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`
-
-async function fetchFeed(feed) {
+async function fetchFeed(feed, bustCache = false) {
+  const cacheKey = feed.url
+  const now = Date.now()
+  if (!bustCache && cache[cacheKey] && now - cache[cacheKey].ts < CACHE_TTL) {
+    return cache[cacheKey].items
+  }
   try {
-    const res = await fetch(PROXY(feed.url), { signal: AbortSignal.timeout(20000) })
+    const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}&count=10`
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(10000) })
     const json = await res.json()
     if (json.status !== 'ok') return []
-    return json.items.slice(0, 8).map(item => ({
+    const items = json.items.map(item => ({
       id: item.link || item.title,
-      title: item.title,
-      link: item.link,
+      title: item.title || '',
+      link: item.link || '',
       source: feed.name,
       pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
-      description: item.description
-        ? item.description.replace(/<[^>]+>/g, '').slice(0, 280)
-        : item.content?.replace(/<[^>]+>/g, '').slice(0, 280) || '',
-    }))
+      description: (item.description || item.content || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .trim()
+        .slice(0, 400),
+    })).filter(i => i.title && i.link)
+    cache[cacheKey] = { items, ts: now }
+    return items
   } catch (e) {
     console.warn(`Failed to fetch ${feed.name}:`, e.message)
     return []
@@ -27,69 +39,35 @@ async function fetchFeed(feed) {
 }
 
 export function useTopic(topicKey, feeds, refreshTrigger = 0) {
-  const cacheKey = `reader-feed-${topicKey}`
-
-  const [items, setItems] = useState(() => {
-    try {
-      const stored = localStorage.getItem(cacheKey)
-      if (stored) {
-        const { data, ts } = JSON.parse(stored)
-        if (Date.now() - ts < CACHE_TTL) {
-          return data.map(item => ({ ...item, pubDate: new Date(item.pubDate) }))
-        }
-      }
-    } catch {}
-    return []
-  })
-
-  const [loading, setLoading] = useState(items.length === 0)
+  const [items, setItems] = useState([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // On first load, skip fetch if cache is fresh
-    if (refreshTrigger === 0) {
+    let cancelled = false
+    const bustCache = refreshTrigger > 0
+
+    async function load() {
+      setLoading(true)
+      setError(null)
       try {
-        const stored = localStorage.getItem(cacheKey)
-        if (stored) {
-          const { ts } = JSON.parse(stored)
-          if (Date.now() - ts < CACHE_TTL) {
-            setLoading(false)
-            return
-          }
-        }
-      } catch {}
+        const results = await Promise.allSettled(feeds.map(f => fetchFeed(f, bustCache)))
+        if (cancelled) return
+        const all = results
+          .filter(r => r.status === 'fulfilled')
+          .flatMap(r => r.value)
+          .sort((a, b) => b.pubDate - a.pubDate)
+        setItems(all)
+      } catch (e) {
+        if (!cancelled) setError(e.message)
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
 
-    // Always fetch on manual refresh (refreshTrigger > 0) or stale/missing cache
-    let cancelled = false
-    setLoading(true)
-
-    Promise.allSettled(feeds.map(fetchFeed)).then(results => {
-      if (cancelled) return
-      const all = results
-        .filter(r => r.status === 'fulfilled')
-        .flatMap(r => r.value)
-        .sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate))
-      setItems(all)
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({ data: all, ts: Date.now() }))
-      } catch {}
-      setLoading(false)
-    }).catch(e => {
-      if (cancelled) return
-      setError(e.message)
-      setLoading(false)
-    })
-
+    load()
     return () => { cancelled = true }
   }, [topicKey, refreshTrigger])
 
   return { items, loading, error }
 }
-```
-
-Save with **Cmd + S**, then:
-```
-git add .
-git commit -m "fix pull to refresh stall"
-git push
