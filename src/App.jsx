@@ -20,6 +20,7 @@ const C = {
 // ─── Relative time ─────────────────────────────────────────────────────────
 function timeAgo(date) {
   const diff = Date.now() - date
+  if (diff <= 0) return 'just now'
   const h = Math.floor(diff / 36e5)
   const m = Math.floor(diff / 6e4)
   if (m < 60) return `${m}m ago`
@@ -116,15 +117,14 @@ function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
           color: C.dimmer,
         }}>{timeAgo(item.pubDate)}</span>
         <button
-          onClick={() => onSave(item)}
-          style={{
-            marginLeft: 'auto', background: 'none', border: 'none',
-            cursor: 'pointer', padding: 0, fontSize: 14,
-            opacity: saved ? 1 : 0.25,
-            transition: 'opacity 0.15s',
-          }}
-          title={saved ? 'Unsave' : 'Save'}
-        >🔖</button>
+  onClick={() => onSave(item)}
+  style={{
+    fontSize: 10, fontFamily: "'DM Mono', monospace",
+    letterSpacing: 1.2, color: saved ? accentColor : C.dimmer,
+    background: 'none', border: 'none',
+    cursor: 'pointer', padding: 0,
+  }}
+>{saved ? '🔖 SAVED' : '🔖 SAVE'}</button>
       </div>
 
       {/* Headline */}
