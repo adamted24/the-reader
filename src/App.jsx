@@ -66,10 +66,11 @@ Respond in this exact JSON format:
 }
 
 // ─── Story card ────────────────────────────────────────────────────────────
-function StoryCard({ item, accentColor, index, topicLabel }) {
+function StoryCard({ item, accentColor, index, topicLabel, saved, onSave }) {
   const [aiData, setAiData] = useState(null)
   const [loading, setLoading] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [copied, setCopied] = useState(false)
   const hasTriedRef = useRef(false)
 
   useEffect(() => {
@@ -85,17 +86,25 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
     return () => clearTimeout(t)
   }, [])
 
-  return (
-    <article style={{
-      borderBottom: `1px solid ${C.faint}`,
-      padding: '24px 0',
-    }}>
+  const handleCopy = () => {
+    navigator.clipboard.writeText(item.link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
-      {/* Meta row */}
+  return (
+    <article style={{ borderBottom: `1px solid ${C.faint}`, padding: '22px 0' }}>
+
+      {/* Meta row: source · topic · age · bookmark */}
       <div style={{
         display: 'flex', gap: 8, alignItems: 'center',
         marginBottom: 11, flexWrap: 'wrap',
       }}>
+        <span style={{
+          fontSize: 10, fontFamily: "'DM Mono', monospace",
+          color: C.dimmer, letterSpacing: 0.5, fontWeight: 500,
+        }}>{item.source}</span>
+        <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
         <span style={{
           fontSize: 10, fontFamily: "'DM Mono', monospace",
           letterSpacing: 1.5, color: accentColor,
@@ -104,13 +113,18 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
         <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
         <span style={{
           fontSize: 10, fontFamily: "'DM Mono', monospace",
-          color: C.dimmer, letterSpacing: 0.5,
-        }}>{item.source}</span>
-        <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
-        <span style={{
-          fontSize: 10, fontFamily: "'DM Mono', monospace",
           color: C.dimmer,
         }}>{timeAgo(item.pubDate)}</span>
+        <button
+          onClick={() => onSave(item)}
+          style={{
+            marginLeft: 'auto', background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, fontSize: 14,
+            opacity: saved ? 1 : 0.25,
+            transition: 'opacity 0.15s',
+          }}
+          title={saved ? 'Unsave' : 'Save'}
+        >🔖</button>
       </div>
 
       {/* Headline */}
@@ -124,9 +138,6 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
           lineHeight: 1.28,
           marginBottom: 11,
           cursor: 'pointer',
-          borderLeft: expanded ? `3px solid ${accentColor}` : '3px solid transparent',
-          paddingLeft: expanded ? 13 : 0,
-          transition: 'padding-left 0.2s, border-color 0.2s',
           margin: 0,
           marginBottom: 11,
         }}
@@ -191,22 +202,30 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
           }}
         >READ MORE +</button>
       ) : (
-        <div>
+        <div style={{
+          border: `1px solid ${C.faint}`,
+          borderRadius: 3,
+          padding: '16px',
+          marginTop: 4,
+        }}>
+          {/* Body text */}
           {item.description && (
             <p style={{
               fontSize: 'clamp(14px, 2.2vw, 16px)',
               fontFamily: "'Lora', serif",
               color: C.ink,
               lineHeight: 1.88,
-              marginBottom: 18,
-              borderLeft: `2px solid ${accentColor}`,
-              paddingLeft: 13,
               margin: 0,
-              marginBottom: 18,
+              marginBottom: 14,
             }}>{item.description}</p>
           )}
 
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Action row */}
+          <div style={{
+            display: 'flex', gap: 16, alignItems: 'center',
+            flexWrap: 'wrap', paddingTop: 10,
+            borderTop: `1px solid ${C.faint}`,
+          }}>
             <a href={item.link} target="_blank" rel="noopener noreferrer"
               style={{
                 fontSize: 10, fontFamily: "'DM Mono', monospace",
@@ -215,6 +234,16 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
                 borderBottom: `1px solid ${accentColor}`,
                 paddingBottom: 1,
               }}>READ FULL STORY ↗</a>
+
+            <button
+              onClick={() => onSave(item)}
+              style={{
+                fontSize: 10, fontFamily: "'DM Mono', monospace",
+                letterSpacing: 1.2, color: saved ? accentColor : C.dimmer,
+                background: 'none', border: 'none',
+                cursor: 'pointer', padding: 0,
+              }}
+            >{saved ? '🔖 SAVED' : '🔖 SAVE'}</button>
 
             <button
               onClick={() => setExpanded(false)}
@@ -232,84 +261,259 @@ function StoryCard({ item, accentColor, index, topicLabel }) {
   )
 }
 
+// ─── Saved card (in SAVED view) ────────────────────────────────────────────
+function SavedCard({ item, accentColor, topicLabel, onUnsave }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(item.link)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  return (
+    <article style={{
+      borderBottom: `1px solid ${C.faint}`,
+      padding: '22px 0',
+    }}>
+      {/* Meta */}
+      <div style={{
+        display: 'flex', gap: 8, alignItems: 'center',
+        marginBottom: 11, flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontSize: 10, fontFamily: "'DM Mono', monospace",
+          color: C.dimmer, letterSpacing: 0.5, fontWeight: 500,
+        }}>{item.source}</span>
+        <span style={{ fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.faint }}>·</span>
+        <span style={{
+          fontSize: 10, fontFamily: "'DM Mono', monospace",
+          letterSpacing: 1.5, color: accentColor,
+          textTransform: 'uppercase', fontWeight: 500,
+        }}>{topicLabel}</span>
+        <button
+          onClick={() => onUnsave(item.id)}
+          style={{
+            marginLeft: 'auto', background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, fontSize: 14,
+          }}
+          title="Remove from saved"
+        >🔖</button>
+      </div>
+
+      {/* Headline */}
+      <h2 style={{
+        fontSize: 'clamp(19px, 3.5vw, 24px)',
+        fontFamily: "'Lora', serif",
+        fontWeight: 600, color: C.black,
+        lineHeight: 1.28, margin: 0, marginBottom: 14,
+      }}>{item.title}</h2>
+
+      {/* URL box */}
+      <div style={{
+        border: `1px solid ${C.faint}`,
+        borderRadius: 3,
+        padding: '12px 14px',
+        marginBottom: 10,
+      }}>
+        <div style={{
+          fontSize: 10, fontFamily: "'DM Mono', monospace",
+          color: C.dimmer, letterSpacing: 1, marginBottom: 6,
+        }}>LINK</div>
+        <div style={{
+          fontSize: 11, fontFamily: "'DM Mono', monospace",
+          color: C.dim, wordBreak: 'break-all', lineHeight: 1.6,
+          userSelect: 'all',
+        }}>{item.link}</div>
+      </div>
+
+      {/* Actions */}
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button
+          onClick={handleCopy}
+          style={{
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            letterSpacing: 1.2, color: copied ? C.teal : accentColor,
+            background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0,
+            transition: 'color 0.2s',
+          }}
+        >{copied ? '✓ COPIED' : 'COPY LINK'}</button>
+
+        <a href={item.link} target="_blank" rel="noopener noreferrer"
+          style={{
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            letterSpacing: 1.2, color: C.dimmer,
+            textDecoration: 'none',
+            borderBottom: `1px solid ${C.faint}`,
+            paddingBottom: 1,
+          }}>READ FULL STORY ↗</a>
+
+        <button
+          onClick={() => onUnsave(item.id)}
+          style={{
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            letterSpacing: 1.2, color: C.dimmer,
+            background: 'none', border: 'none',
+            cursor: 'pointer', padding: 0, marginLeft: 'auto',
+          }}
+        >REMOVE −</button>
+      </div>
+    </article>
+  )
+}
+
 // ─── Topic section ─────────────────────────────────────────────────────────
-function TopicSection({ topicKey, topic }) {
-  const { items, loading, error, refresh } = useTopic(topicKey, topic.feeds)
-  const [expanded, setExpanded] = useState(true)
+function TopicSection({ topicKey, topic, savedIds, onSave, refreshTrigger }) {
+  const { items, loading, error } = useTopic(topicKey, topic.feeds, refreshTrigger)
 
   return (
     <section style={{ marginBottom: 48 }}>
-      <div style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 16, paddingBottom: 10, borderBottom: `2px solid ${topic.color}`,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            fontSize: 11, fontFamily: "'DM Mono', monospace", letterSpacing: 2,
-            textTransform: 'uppercase', color: C.black, fontWeight: 500,
-          }}>{topic.label}</div>
-          {!loading && (
-            <div style={{
-              fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.dimmer,
-            }}>{items.length} stories</div>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button onClick={refresh} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.dimmer,
-            letterSpacing: 1, padding: 0,
-          }}>↻ REFRESH</button>
-          <button onClick={() => setExpanded(e => !e)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            fontSize: 10, fontFamily: "'DM Mono', monospace", color: C.dimmer,
-            letterSpacing: 1, padding: 0,
-          }}>{expanded ? 'COLLAPSE' : 'EXPAND'}</button>
-        </div>
-      </div>
-
       {loading && (
         <div style={{
           fontSize: 11, fontFamily: "'DM Mono', monospace", color: C.dimmer,
           letterSpacing: 1.5, padding: '24px 0',
         }}>LOADING…</div>
       )}
-
       {error && (
         <div style={{
           fontSize: 13, fontFamily: "'Lora', serif", fontStyle: 'italic',
           color: C.dimmer, padding: '12px 0',
         }}>Some feeds unavailable.</div>
       )}
-
-      {expanded && items.map((item, i) => (
+      {items.map((item, i) => (
         <StoryCard
           key={item.id}
           item={item}
           accentColor={topic.color}
           index={i}
           topicLabel={topic.label}
+          saved={savedIds.has(item.id)}
+          onSave={onSave}
         />
       ))}
     </section>
   )
 }
 
+// ─── Pull to refresh ───────────────────────────────────────────────────────
+function usePullToRefresh(onRefresh) {
+  const startY = useRef(null)
+  const [pulling, setPulling] = useState(false)
+  const [distance, setDistance] = useState(0)
+  const threshold = 80
+
+  useEffect(() => {
+    const onTouchStart = (e) => {
+      if (window.scrollY === 0) {
+        startY.current = e.touches[0].clientY
+      }
+    }
+    const onTouchMove = (e) => {
+      if (startY.current === null) return
+      const dist = e.touches[0].clientY - startY.current
+      if (dist > 0) {
+        setPulling(true)
+        setDistance(Math.min(dist, threshold * 1.5))
+      }
+    }
+    const onTouchEnd = () => {
+      if (distance >= threshold) {
+        onRefresh()
+      }
+      startY.current = null
+      setPulling(false)
+      setDistance(0)
+    }
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd)
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [distance, onRefresh])
+
+  return { pulling, distance, threshold }
+}
+
 // ─── App ───────────────────────────────────────────────────────────────────
 export default function App() {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [savedItems, setSavedItems] = useState(() => {
+    try {
+      const stored = localStorage.getItem('reader-saved')
+      return stored ? JSON.parse(stored) : []
+    } catch { return [] }
+  })
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  const savedIds = new Set(savedItems.map(i => i.id))
+
+  // Persist saved items
+  useEffect(() => {
+    try {
+      localStorage.setItem('reader-saved', JSON.stringify(savedItems))
+    } catch {}
+  }, [savedItems])
+
+  const handleSave = useCallback((item) => {
+    setSavedItems(prev => {
+      const exists = prev.find(i => i.id === item.id)
+      if (exists) return prev.filter(i => i.id !== item.id)
+      return [...prev, item]
+    })
+  }, [])
+
+  const handleUnsave = useCallback((id) => {
+    setSavedItems(prev => prev.filter(i => i.id !== id))
+  }, [])
+
+  const handleRefreshAll = useCallback(() => {
+    setRefreshTrigger(t => t + 1)
+  }, [])
+
+  const { pulling, distance, threshold } = usePullToRefresh(handleRefreshAll)
+
   const now = new Date()
   const dateStr = now.toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric'
   })
 
   const topics = Object.entries(TOPICS)
-  const visibleTopics = activeFilter === 'all'
-    ? topics
-    : topics.filter(([key]) => key === activeFilter)
+
+  // Find topic color for a saved item
+  const getTopicForItem = (item) => {
+    for (const [key, topic] of topics) {
+      if (topic.feeds.some(f => f.name === item.source)) {
+        return { key, topic }
+      }
+    }
+    return { key: 'la', topic: topics[0][1] }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: C.bg }}>
+
+      {/* Pull to refresh indicator */}
+      {pulling && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          height: Math.min(distance, 60),
+          background: C.bg,
+          transition: 'height 0.1s',
+        }}>
+          <div style={{
+            fontSize: 10, fontFamily: "'DM Mono', monospace",
+            color: distance >= threshold ? C.teal : C.dimmer,
+            letterSpacing: 1,
+          }}>
+            {distance >= threshold ? '↑ RELEASE TO REFRESH' : '↓ PULL TO REFRESH'}
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <header style={{
@@ -319,7 +523,6 @@ export default function App() {
         background: C.bg,
       }}>
         <div style={{ maxWidth: 720, margin: '0 auto' }}>
-
           <div style={{
             display: 'flex', alignItems: 'flex-end',
             justifyContent: 'space-between', paddingTop: 18, paddingBottom: 14,
@@ -333,11 +536,22 @@ export default function App() {
             }}>
               The <span style={{ fontStyle: 'italic', color: C.teal }}>Reader</span>
             </div>
-            <div style={{
-              fontSize: 10, fontFamily: "'DM Mono', monospace",
-              color: C.dimmer, letterSpacing: 0.5,
-              textAlign: 'right', paddingBottom: 3,
-            }}>{dateStr}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button
+                onClick={handleRefreshAll}
+                style={{
+                  fontSize: 10, fontFamily: "'DM Mono', monospace",
+                  letterSpacing: 1, color: C.dimmer,
+                  background: 'none', border: 'none',
+                  cursor: 'pointer', padding: 0,
+                }}
+              >↻ REFRESH</button>
+              <div style={{
+                fontSize: 10, fontFamily: "'DM Mono', monospace",
+                color: C.dimmer, letterSpacing: 0.5,
+                textAlign: 'right',
+              }}>{dateStr}</div>
+            </div>
           </div>
 
           {/* Filter tabs */}
@@ -346,18 +560,11 @@ export default function App() {
             WebkitOverflowScrolling: 'touch',
             msOverflowStyle: 'none', scrollbarWidth: 'none',
           }}>
-            <button
-              onClick={() => setActiveFilter('all')}
-              style={{
-                padding: '9px 14px 8px', border: 'none', background: 'none',
-                cursor: 'pointer', whiteSpace: 'nowrap',
-                fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5,
-                textTransform: 'uppercase',
-                color: activeFilter === 'all' ? C.black : C.dimmer,
-                borderBottom: activeFilter === 'all' ? `2px solid ${C.black}` : '2px solid transparent',
-                transition: 'all 0.15s',
-              }}>All</button>
-            {topics.map(([key, topic]) => (
+            {[
+              { key: 'all', label: 'All', color: C.black },
+              ...topics.map(([key, topic]) => ({ key, label: topic.label, color: topic.color })),
+              { key: 'saved', label: `Saved${savedItems.length > 0 ? ` (${savedItems.length})` : ''}`, color: C.dimmer },
+            ].map(({ key, label, color }) => (
               <button key={key}
                 onClick={() => setActiveFilter(key)}
                 style={{
@@ -365,10 +572,10 @@ export default function App() {
                   cursor: 'pointer', whiteSpace: 'nowrap',
                   fontFamily: "'DM Mono', monospace", fontSize: 10, letterSpacing: 1.5,
                   textTransform: 'uppercase',
-                  color: activeFilter === key ? topic.color : C.dimmer,
-                  borderBottom: activeFilter === key ? `2px solid ${topic.color}` : '2px solid transparent',
+                  color: activeFilter === key ? color : C.dimmer,
+                  borderBottom: activeFilter === key ? `2px solid ${color}` : '2px solid transparent',
                   transition: 'all 0.15s',
-                }}>{topic.label}</button>
+                }}>{label}</button>
             ))}
           </div>
         </div>
@@ -376,9 +583,46 @@ export default function App() {
 
       {/* Content */}
       <main style={{ maxWidth: 720, margin: '0 auto', padding: '8px 20px 80px' }}>
-        {visibleTopics.map(([key, topic]) => (
-          <TopicSection key={key} topicKey={key} topic={topic} />
-        ))}
+
+        {/* Saved view */}
+        {activeFilter === 'saved' && (
+          <section style={{ marginBottom: 48 }}>
+            {savedItems.length === 0 ? (
+              <div style={{
+                padding: '48px 0', textAlign: 'center',
+                fontFamily: "'Lora', serif", fontStyle: 'italic',
+                color: C.dimmer, fontSize: 17,
+              }}>No saved stories yet. Tap 🔖 on any story to save it.</div>
+            ) : (
+              savedItems.map(item => {
+                const { topic } = getTopicForItem(item)
+                return (
+                  <SavedCard
+                    key={item.id}
+                    item={item}
+                    accentColor={topic.color}
+                    topicLabel={topic.label}
+                    onUnsave={handleUnsave}
+                  />
+                )
+              })
+            )}
+          </section>
+        )}
+
+        {/* Topic sections */}
+        {activeFilter !== 'saved' && topics
+          .filter(([key]) => activeFilter === 'all' || activeFilter === key)
+          .map(([key, topic]) => (
+            <TopicSection
+              key={key}
+              topicKey={key}
+              topic={topic}
+              savedIds={savedIds}
+              onSave={handleSave}
+              refreshTrigger={refreshTrigger}
+            />
+          ))}
       </main>
 
       <footer style={{
