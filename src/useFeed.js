@@ -1,10 +1,11 @@
-// ─── Hook: fetch + parse all feeds for a topic ────────────────────────────
 import { useState, useEffect, useCallback } from 'react'
-import { PROXY } from './feeds.js'
 import { parseFeed } from './parseFeed.js'
 
-const CACHE_TTL = 1000 * 60 * 30 // 30 minutes
+const CACHE_TTL = 1000 * 60 * 30
 const cache = {}
+
+const PROXY = (url) =>
+  `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}`
 
 async function fetchFeed(feed) {
   const cacheKey = feed.url
@@ -15,7 +16,17 @@ async function fetchFeed(feed) {
   try {
     const res = await fetch(PROXY(feed.url), { signal: AbortSignal.timeout(20000) })
     const json = await res.json()
-    const items = parseFeed(json.contents, feed.name)
+    if (json.status !== 'ok') return []
+    const items = json.items.slice(0, 8).map(item => ({
+      id: item.link || item.title,
+      title: item.title,
+      link: item.link,
+      source: feed.name,
+      pubDate: item.pubDate ? new Date(item.pubDate) : new Date(),
+      description: item.description
+        ? item.description.replace(/<[^>]+>/g, '').slice(0, 280)
+        : item.content?.replace(/<[^>]+>/g, '').slice(0, 280) || '',
+    }))
     cache[cacheKey] = { items, ts: now }
     return items
   } catch (e) {
